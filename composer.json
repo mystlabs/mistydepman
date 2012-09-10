@@ -1,0 +1,12 @@
+{
+    "name": "mystlabs/mistydepman",
+    "type": "library",
+    "description": "MistyDepMan - dependency injection container and provider",
+    "minimum-stability": "dev",
+    "require-dev": {
+        "mystlabs/mistytesting" : "*"
+    },
+    "autoload": {
+       "psr-0": {"MistyDepMan": "src/"}
+    }
+}
