@@ -7,8 +7,21 @@ use MistyDepMan\Exception\UnknownKeyException;
 
 class Provider
 {
+    /** @var array */
     private $entities;
+
+    /** @var array */
     private $proxies;
+
+    /**
+     * @param array $entities
+     * @param array $proxies
+     */
+    public function __construct(array $entities = array(), array $proxies = array())
+    {
+        $this->entities = $entities;
+        $this->proxies = $proxies;
+    }
 
     /**
      * Register an entity for this key - supports lazy loading
@@ -16,8 +29,8 @@ class Provider
      * and the function will be replaced with its return value
      *
      * @param string $key The key that represents this object
-     * @param mixed|function $entity The entity for $key, or a callable to lazy initialize it
-     * @throws MistyDepMap\Exception\DuplicateKeyException If the key is already in use
+     * @param mixed|callable $entity The entity for $key, or a callable to lazy initialize it
+     * @throws DuplicateKeyException If the key is already in use
      */
     public function register($key, $entity)
     {
@@ -45,7 +58,7 @@ class Provider
      *
      * @param string $key The key that represents the object
      * @return mixed The value registered for $key
-     * @throws MistyDepMap\Exception\UnknownKeyException If not found
+     * @throws UnknownKeyException If not found
      */
     public function lookup($key)
     {
@@ -53,30 +66,40 @@ class Provider
             throw new UnknownKeyException("Unknown key: $key");
         }
 
-        if (is_callable($this->entities[$key])) {
-            $this->entities[$key] = $this->entities[$key]();
+        if (!$this->isInitialized($key)) {
+            $callback = $this->entities[$key];
+            $this->entities[$key] = $callback($this);
         }
 
         return $this->entities[$key];
     }
 
+    public function isInitialized($key)
+    {
+        return !is_callable($this->entities[$key]);
+    }
+
     /**
      * Return a LazyLoadProxy for $class. The real class will be instanciated only when the one
      * of its method will be invoked
-     * THIS METHOD WILL ALWAYS RETURN THE SAME PROXY FOR A GIVEN KEY
+     * THIS METHOD WILL ALWAYS RETURN THE SAME PROXY FOR A GIVEN CLASS NAME
      *
      * @param string $className The full class name of the class we want to lazy load
      * @return LazyLoadProxy A lazy loader
      */
-    public function proxy($className)
+    public function proxy($className /* varargs...*/)
     {
-        if (isset($this->proxies[$className])) {
-            return $this->proxies[$className];
-        }
+        if (!isset($this->proxies[$className])) {
 
-        $this->proxies[$className] = new LazyLoadProxy(function() use ($className) {
-            return $this->create($className);
-        });
+            // creating a nre proxy
+            $args = func_get_args();
+            $this->proxies[$className] = new LazyLoadProxy(function() use ($args) {
+                return call_user_func_array(
+                    array($this, 'create'),
+                    $args
+                );
+            });
+        }
 
         return $this->proxies[$className];
     }
@@ -90,9 +113,15 @@ class Provider
      */
     public function create($className /* varargs...*/)
     {
-        $args = array_slice(func_get_args(), 1);
+        if (is_array($className)) {
+            $varargs = array_slice($className, 1);
+            $className = $className[0];
+        } else {
+            $varargs = array_slice(func_get_args(), 1);
+        }
+
         $reflectionObj = new \ReflectionClass($className);
-        $instance = $reflectionObj->newInstanceArgs($args);
+        $instance = $reflectionObj->newInstanceArgs($varargs);
 
         if (method_exists($instance, 'setupContainer')) {
             $instance->setupContainer($this);

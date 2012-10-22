@@ -4,6 +4,7 @@ namespace MistyDepMan;
 
 trait Container
 {
+    /** @var Provider */
     protected $provider;
 
     /**

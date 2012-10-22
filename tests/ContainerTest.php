@@ -19,12 +19,6 @@ class ContainerTest extends MistyTesting\UnitTest
 
         $this->assertEquals(1, $impl->state);
     }
-
-    public function testInterface()
-    {
-        $this->assertFalse(new ContainerImpl instanceof IContainer);
-        $this->assertTrue(new ContainerImplWithInterface instanceof IContainer);
-    }
 }
 
 class ContainerImpl
@@ -37,9 +31,4 @@ class ContainerImpl
     {
         $this->state = 1;
     }
-}
-
-class ContainerImplWithInterface implements IContainer
-{
-    use Container;
 }

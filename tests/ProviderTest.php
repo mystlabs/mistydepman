@@ -55,16 +55,22 @@ class ProviderTest extends MistyTesting\UnitTest
             $proxy->doStuff();
             $this->fail('The constructor should have been called now!');
         }
-        catch(Exception $e)
+        catch(InvalidArgumentException $e)
         {
             // expected at this point!
         }
     }
 
-    public function testProviderAutoinjecItselfInProxies()
+    public function testProviderAutoInjectItselfInProxies()
     {
         $proxy = $this->provider->proxy('ExampleClassUsingContainer');
         $this->assertNotNull($proxy->getProvider());
+    }
+
+    public function testProxyWithConstructorArgs()
+    {
+        $proxy = $this->provider->proxy('ExampleClassWithConstructorArguments', 'a', 2, array('c'));
+        $proxy->doStuff();
     }
 }
 
@@ -72,7 +78,7 @@ class ExampleClassNotUsingContainer
 {
     public function __construct()
     {
-        throw new Exception();
+        throw new InvalidArgumentException();
     }
 
     public function doStuff()
@@ -81,7 +87,7 @@ class ExampleClassNotUsingContainer
     }
 }
 
-class ExampleClassUsingContainer implements MistyDepMan\IContainer
+class ExampleClassUsingContainer
 {
     use MistyDepMan\Container;
 
@@ -89,5 +95,20 @@ class ExampleClassUsingContainer implements MistyDepMan\IContainer
     {
         // from Container
         return $this->provider;
+    }
+}
+
+class ExampleClassWithConstructorArguments
+{
+    public function __construct($a, $b, $c)
+    {
+        if (!$a || !$b || !$c) {
+            throw new InvalidArgumentException();
+        }
+    }
+
+    public function doStuff()
+    {
+
     }
 }

@@ -12,7 +12,7 @@ class LazyLoadProxy
     private $instance;
 
     /**
-     * @param Closure $initializer The closure to create an instance of the wrapped class
+     * @param \Closure $initializer The closure to create an instance of the wrapped class
      */
     public function __construct(\Closure $initializer)
     {
